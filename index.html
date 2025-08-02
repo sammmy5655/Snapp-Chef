@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnapChef - Smart Recipe Finder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Rubik', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(-45deg, #f7c59f, #ffecd2, #c3f0ca, #a9def9);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #333;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .upload-box {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto 2rem;
+      padding: 2rem;
+      border: 2px dashed #888;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(12px);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .upload-box:hover {
+      border-color: #444;
+      box-shadow: 0 0 12px rgba(0,0,0,0.2);
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    .upload-box input {
+      display: none;
+    }
+
+    .upload-box i {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #444;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .upload-box p {
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    .selector {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .selector select {
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .results {
+      margin-top: 2rem;
+    }
+
+    .recipe-card {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 15px;
+      padding: 1rem;
+      margin: 1rem auto;
+      max-width: 500px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .recipe-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <h1>SnapChef 🍽️</h1>
+
+  <div class="selector">
+    <label for="cuisine">Choose a cuisine: </label>
+    <select id="cuisine">
+      <option value="">Any</option>
+      <option value="italian">Italian</option>
+      <option value="mexican">Mexican</option>
+      <option value="indian">Indian</option>
+      <option value="chinese">Chinese</option>
+      <option value="japanese">Japanese</option>
+      <option value="thai">Thai</option>
+      <option value="french">French</option>
+    </select>
+  </div>
+
+  <label class="upload-box">
+    <i class="fas fa-cloud-upload-alt"></i>
+    <p>Click or drag an image here to find recipes</p>
+    <input type="file" id="imageInput" accept="image/*" />
+  </label>
+
+  <div class="results" id="results"></div>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const resultsDiv = document.getElementById('results');
+    const cuisineSelect = document.getElementById('cuisine');
+
+    imageInput.addEventListener('change', async () => {
+      const file = imageInput.files[0];
+      if (!file) return;
+
+      resultsDiv.innerHTML = '<p>🔍 Scanning your image for ingredients...</p>';
+
+      const fakeIngredients = ['Tomato', 'Basil', 'Garlic'];
+      const query = fakeIngredients.join(',');
+      const cuisine = cuisineSelect.value;
+
+      const API_KEY = '09efdb476cd64d62bad9550a8ab1e6dc';
+      const url = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${query}&number=5&apiKey=${API_KEY}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        resultsDiv.innerHTML = '';
+
+        for (const recipe of data) {
+          const detailsUrl = `https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}${cuisine ? '&cuisine=' + cuisine : ''}`;
+          const recipeRes = await fetch(detailsUrl);
+          const recipeDetails = await recipeRes.json();
+
+          const div = document.createElement('div');
+          div.className = 'recipe-card';
+          div.innerHTML = `
+            <h3>${recipe.title}</h3>
+            <img src="${recipe.image}" width="100%" style="border-radius:10px;"/>
+            <p>Used Ingredients: ${recipe.usedIngredientCount}</p>
+            <p>Missing Ingredients: ${recipe.missedIngredientCount}</p>
+            <p><strong>Instructions:</strong> ${recipeDetails.instructions ? recipeDetails.instructions : 'No instructions available.'}</p>
+          `;
+          resultsDiv.appendChild(div);
+        }
+      } catch (err) {
+        resultsDiv.innerHTML = '<p>⚠️ Failed to fetch recipes.</p>';
+      }
+    });
+  </script>
+</body>
+</html>
